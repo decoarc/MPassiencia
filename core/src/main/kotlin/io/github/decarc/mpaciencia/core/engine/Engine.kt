@@ -15,9 +15,23 @@ object Scoring {
 object Engine {
     /** Aplica [move] e devolve o novo estado, ou `null` se a jogada for ilegal. */
     fun apply(state: GameState, move: Move): GameState? = when (move) {
-        Move.Draw -> null
-        Move.Recycle -> null
+        Move.Draw -> draw(state)
+        Move.Recycle -> recycle(state)
         is Move.Transfer -> transfer(state, move)
+    }
+
+    /** Tira as cartas uma por vez do topo do monte para o topo do descarte. */
+    private fun draw(state: GameState): GameState? {
+        if (!Rules.isLegal(state, Move.Draw)) return null
+        val n = minOf(state.drawMode.count, state.stock.size)
+        val drawn = state.stock.takeLast(n).reversed()
+        return state.copy(stock = state.stock.dropLast(n), waste = state.waste + drawn, moves = state.moves + 1)
+    }
+
+    /** Devolve o descarte ao monte de modo que a próxima passada saia na mesma ordem. */
+    private fun recycle(state: GameState): GameState? {
+        if (!Rules.isLegal(state, Move.Recycle)) return null
+        return state.copy(stock = state.waste.reversed(), waste = emptyList(), moves = state.moves + 1)
     }
 
     private fun transfer(state: GameState, move: Move.Transfer): GameState? {

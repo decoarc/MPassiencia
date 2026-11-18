@@ -7,8 +7,8 @@ import io.github.decarc.mpaciencia.core.model.PileRef
 
 object Rules {
     fun isLegal(state: GameState, move: Move): Boolean = when (move) {
-        Move.Draw -> false
-        Move.Recycle -> false
+        Move.Draw -> state.stock.isNotEmpty()
+        Move.Recycle -> state.stock.isEmpty() && state.waste.isNotEmpty()
         is Move.Transfer -> movingCards(state, move) != null
     }
 
