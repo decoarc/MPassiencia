@@ -12,6 +12,21 @@ fun up(rank: Int, suit: Suit, deck: Int = 0) = TableauCard(Card(suit, rank, deck
 fun down(rank: Int, suit: Suit, deck: Int = 0) = TableauCard(Card(suit, rank, deck), faceUp = false)
 fun col(vararg cards: TableauCard): List<TableauCard> = cards.toList()
 
+/** Todas as jogadas legais do estado (força bruta, só para testes). */
+fun allLegalMoves(s: GameState): List<io.github.decarc.mpaciencia.core.model.Move> {
+    val piles = buildList<io.github.decarc.mpaciencia.core.model.PileRef> {
+        add(io.github.decarc.mpaciencia.core.model.PileRef.Waste)
+        repeat(GameState.FOUNDATIONS) { add(io.github.decarc.mpaciencia.core.model.PileRef.Foundation(it)) }
+        repeat(GameState.COLUMNS) { add(io.github.decarc.mpaciencia.core.model.PileRef.Tableau(it)) }
+    }
+    val transfers = piles.flatMap { from ->
+        val max = (from as? io.github.decarc.mpaciencia.core.model.PileRef.Tableau)?.let { s.tableau[it.index].size } ?: 1
+        piles.flatMap { to -> (1..maxOf(1, max)).map { io.github.decarc.mpaciencia.core.model.Move.Transfer(from, to, it) } }
+    }
+    val all = transfers + io.github.decarc.mpaciencia.core.model.Move.Draw + io.github.decarc.mpaciencia.core.model.Move.Recycle
+    return all.filter { io.github.decarc.mpaciencia.core.engine.Rules.isLegal(s, it) }
+}
+
 /** Fundações com [cards] na posição [index] e o resto vazio. */
 fun foundationWith(index: Int, vararg cards: Card): List<List<Card>> =
     List(GameState.FOUNDATIONS) { if (it == index) cards.toList() else emptyList() }
