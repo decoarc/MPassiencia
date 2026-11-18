@@ -94,25 +94,33 @@ object Hints {
         // 1. para a fundação
         TapToMove.foundationTarget(s, PileRef.Waste)?.let(::add)
         s.tableau.indices.forEach { i -> TapToMove.foundationTarget(s, PileRef.Tableau(i))?.let(::add) }
-        // 2. entre colunas
-        addAll(tableauPlays(s))
+        // 2. entre colunas, virando uma carta escondida
+        addAll(tableauPlays(s, Benefit.REVEAL))
         // 3. do descarte para uma coluna
         firstColumnTarget(s, PileRef.Waste, 1)?.let(::add)
+        // 4. entre colunas, liberando uma carta para a fundação
+        addAll(tableauPlays(s, Benefit.FREE_FOR_FOUNDATION))
+        // 5. esvaziando uma coluna para um Rei que espera
+        addAll(tableauPlays(s, Benefit.EMPTY_FOR_KING))
     }
 
-    private fun tableauPlays(s: GameState): List<Move.Transfer> {
+    /** O que uma jogada entre colunas ganha, em ordem de progresso real. */
+    private enum class Benefit { REVEAL, FREE_FOR_FOUNDATION, EMPTY_FOR_KING }
+
+    private fun tableauPlays(s: GameState, wanted: Benefit): List<Move.Transfer> {
         val kingWaiting = kingWaiting(s)
         return s.tableau.indices.flatMap { i ->
             val column = s.tableau[i]
             column.indices.filter { column[it].faceUp }.mapNotNull { k ->
                 val count = column.size - k
                 val below = column.getOrNull(k - 1)
-                val useful = when {
-                    below == null -> kingWaiting
-                    !below.faceUp -> true
-                    else -> canGoToFoundation(s, below.card)
+                val benefit = when {
+                    below == null -> Benefit.EMPTY_FOR_KING.takeIf { kingWaiting }
+                    !below.faceUp -> Benefit.REVEAL
+                    canGoToFoundation(s, below.card) -> Benefit.FREE_FOR_FOUNDATION
+                    else -> null
                 }
-                if (!useful) return@mapNotNull null
+                if (benefit != wanted) return@mapNotNull null
                 firstColumnTarget(s, PileRef.Tableau(i), count, allowEmpty = below != null)
             }
         }
@@ -137,14 +145,26 @@ object Hints {
             .sortedBy { if (s.tableau[(it.to as PileRef.Tableau).index].isEmpty()) 1 else 0 }
             .firstOrNull()
 
-    /** Da fundação para uma coluna, só se isso abrir uma jogada útil nova para aquela coluna. */
+    /**
+     * Da fundação para uma coluna, só se isso abrir, naquela coluna, uma jogada nova que traga
+     * progresso real: virar uma carta escondida ou usar a carta do descarte. Liberar outra carta
+     * para a fundação não conta: com 3 baralhos, seria só trocar uma carta pela gêmea, em ciclo.
+     */
     private fun foundationToTableau(s: GameState, before: List<Move.Transfer>): List<Move.Transfer> =
         s.foundations.indices.flatMap { f ->
             s.tableau.indices.mapNotNull { t ->
                 val move = Move.Transfer(PileRef.Foundation(f), PileRef.Tableau(t))
                 val next = Engine.apply(s, move) ?: return@mapNotNull null
-                val opened = basePlays(next).any { it.to == PileRef.Tableau(t) && it !in before }
+                val opened = basePlays(next).any {
+                    it.to == PileRef.Tableau(t) && it !in before && revealsOrUsesWaste(next, it)
+                }
                 move.takeIf { opened }
             }
         }
+
+    private fun revealsOrUsesWaste(s: GameState, play: Move.Transfer): Boolean = when (val from = play.from) {
+        PileRef.Waste -> true
+        is PileRef.Tableau -> s.tableau[from.index].let { col -> col.getOrNull(col.size - play.count - 1)?.faceUp == false }
+        else -> false
+    }
 }
