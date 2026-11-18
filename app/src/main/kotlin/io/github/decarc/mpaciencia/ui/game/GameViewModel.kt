@@ -7,6 +7,8 @@ import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import io.github.decarc.mpaciencia.core.assist.AutoComplete
+import io.github.decarc.mpaciencia.core.assist.Hint
+import io.github.decarc.mpaciencia.core.assist.Hints
 import io.github.decarc.mpaciencia.core.assist.TapToMove
 import io.github.decarc.mpaciencia.core.engine.Game
 import io.github.decarc.mpaciencia.core.model.DrawMode
@@ -17,6 +19,7 @@ import io.github.decarc.mpaciencia.data.GameStore
 import io.github.decarc.mpaciencia.data.SavedGame
 import io.github.decarc.mpaciencia.data.Settings
 import io.github.decarc.mpaciencia.data.SettingsStore
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharedFlow
@@ -34,6 +37,7 @@ class GameViewModel(
     private val store: GameStore,
     settingsStore: SettingsStore,
     private val clock: () -> Long = SystemClock::elapsedRealtime,
+    private val hints: (GameState, Move?) -> List<Hint> = Hints::all,
 ) : ViewModel() {
     private val _state = MutableStateFlow(GameUiState())
     val state: StateFlow<GameUiState> = _state.asStateFlow()
@@ -50,6 +54,7 @@ class GameViewModel(
     private var runningSince: Long? = null
     private var started = false
     private var active = false
+    private var hintIndex = 0
 
     init {
         viewModelScope.launch {
@@ -89,6 +94,37 @@ class GameViewModel(
             won = game.state.isWon,
             hasSavedGame = true,
         )
+    }
+
+    /** Mostra a próxima dica; cada toque avança na lista. */
+    fun hint() {
+        val game = _state.value.game ?: return
+        if (_state.value.won) return
+        val list = hints(game.state, game.moves.lastOrNull())
+        if (list.isEmpty()) return
+        val h = list[hintIndex % list.size]
+        hintIndex++
+        _state.update { it.copy(hint = h, stuck = h == Hint.Stuck) }
+    }
+
+    fun dismissStuck() {
+        _state.update { it.copy(stuck = false, hint = null) }
+    }
+
+    /** Botão "Terminar": leva as cartas para as fundações, uma a uma, no ritmo das animações. */
+    fun finish() {
+        val start = _state.value.game ?: return
+        if (_state.value.finishing || !AutoComplete.canFinish(start.state)) return
+        _state.update { it.copy(finishing = true) }
+        viewModelScope.launch {
+            while (true) {
+                val current = _state.value.game ?: break
+                val move = AutoComplete.nextMove(current.state) ?: break
+                if (!play(move)) break
+                delay(maxOf(30L, settings.value.animationSpeed.moveMillis.toLong()))
+            }
+            _state.update { it.copy(finishing = false) }
+        }
     }
 
     fun tapStock(): Boolean {
@@ -141,6 +177,13 @@ class GameViewModel(
     }
 
     private fun onNewGameState(next: Game, sound: SoundEvent?) {
+        hintIndex = 0
+        if (next.state.isWon) {
+            onWin(next)
+            sound?.let { _sounds.tryEmit(it) }
+            _sounds.tryEmit(SoundEvent.Win)
+            return
+        }
         _state.update {
             it.copy(
                 game = next,
@@ -154,6 +197,15 @@ class GameViewModel(
         save()
     }
 
+    private fun onWin(game: Game) {
+        runningSince?.let { accumulatedMs += clock() - it }
+        runningSince = null
+        _state.update {
+            it.copy(game = game, elapsedMs = accumulatedMs, hint = null, stuck = false, canFinish = false, won = true, hasSavedGame = false)
+        }
+        viewModelScope.launch { saveLock.withLock { store.clear() } }
+    }
+
     private fun soundFor(move: Move, before: GameState, after: GameState): SoundEvent = when {
         move is Move.Transfer && move.to is PileRef.Foundation -> SoundEvent.Foundation
         move == Move.Draw || move == Move.Recycle -> SoundEvent.Flip
@@ -165,6 +217,7 @@ class GameViewModel(
 
     private fun save() {
         val game = _state.value.game ?: return
+        if (_state.value.won) return
         val saved = SavedGame(game, elapsedNow())
         viewModelScope.launch { saveLock.withLock { store.save(saved) } }
     }
