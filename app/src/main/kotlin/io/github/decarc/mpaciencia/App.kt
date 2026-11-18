@@ -1,9 +1,7 @@
 package io.github.decarc.mpaciencia
 
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.material3.AlertDialog
@@ -14,7 +12,6 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
@@ -33,9 +30,9 @@ import io.github.decarc.mpaciencia.ui.game.GameScreen
 import io.github.decarc.mpaciencia.ui.game.GameViewModel
 import io.github.decarc.mpaciencia.ui.menu.MenuScreen
 import io.github.decarc.mpaciencia.ui.menu.NewGameDialog
+import io.github.decarc.mpaciencia.ui.rules.RulesScreen
+import io.github.decarc.mpaciencia.ui.settings.SettingsScreen
 import io.github.decarc.mpaciencia.ui.theme.Cream
-import io.github.decarc.mpaciencia.ui.theme.TitleCream
-import io.github.decarc.mpaciencia.ui.theme.feltBackground
 import kotlinx.serialization.Serializable
 
 @Serializable data object MenuRoute : NavKey
@@ -93,10 +90,13 @@ fun App() {
                     vm = vm,
                     onOpenMenu = { showInGameMenu = true },
                     onNewGame = { showNewGame = true },
+                    onExitToMenu = { toMenu() },
                 )
             }
-            entry<RulesRoute> { Placeholder(stringResource(R.string.how_to_play)) { backStack.removeAt(backStack.lastIndex) } }
-            entry<SettingsRoute> { Placeholder(stringResource(R.string.options)) { backStack.removeAt(backStack.lastIndex) } }
+            entry<RulesRoute> { RulesScreen(onBack = { backStack.removeAt(backStack.lastIndex) }) }
+            entry<SettingsRoute> {
+                SettingsScreen(settings, onChange = vm::updateSettings, onBack = { backStack.removeAt(backStack.lastIndex) })
+            }
         },
     )
 
@@ -176,10 +176,3 @@ private fun MenuItem(label: String, tag: String, onClick: () -> Unit) {
     TextButton(onClick = onClick, modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp).testTag(tag)) { Text(label) }
 }
 
-/** Tela provisória até a Task 9. */
-@Composable
-private fun Placeholder(title: String, onBack: () -> Unit) {
-    Box(Modifier.fillMaxSize().feltBackground(), contentAlignment = Alignment.Center) {
-        TextButton(onClick = onBack) { Text(title, color = TitleCream) }
-    }
-}

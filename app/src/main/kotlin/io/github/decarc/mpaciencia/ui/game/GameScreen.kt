@@ -59,6 +59,7 @@ fun GameScreen(
     vm: GameViewModel,
     onOpenMenu: () -> Unit,
     onNewGame: () -> Unit,
+    onExitToMenu: () -> Unit = {},
 ) {
     val ui by vm.state.collectAsStateWithLifecycle()
     val settings by vm.settings.collectAsStateWithLifecycle()
@@ -119,6 +120,21 @@ fun GameScreen(
                 shape = RoundedCornerShape(12.dp),
                 modifier = Modifier.align(Alignment.BottomCenter).padding(bottom = 12.dp).zIndex(20_000f).testTag("finish"),
             ) { Text(stringResource(R.string.finish), fontWeight = FontWeight.Bold, fontSize = 16.sp) }
+        }
+
+        if (ui.won) {
+            Box(Modifier.fillMaxSize().zIndex(30_000f)) {
+                WinOverlay(
+                    score = game.state.score,
+                    moves = game.state.moves,
+                    elapsedMs = ui.elapsedMs,
+                    gameNumber = game.gameNumber,
+                    mode = game.drawMode,
+                    animationSpeed = settings.animationSpeed,
+                    onNewGame = onNewGame,
+                    onMenu = onExitToMenu,
+                )
+            }
         }
 
         if (ui.stuck) {
