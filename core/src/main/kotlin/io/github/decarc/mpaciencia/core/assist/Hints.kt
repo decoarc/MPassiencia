@@ -19,9 +19,9 @@ object Hints {
      * Dicas em ordem de prioridade. A interface mostra `all[i % size]` a cada toque em Dica.
      * Vazia quando o jogo já foi vencido.
      */
-    fun all(state: GameState): List<Hint> {
+    fun all(state: GameState, lastMove: Move? = null): List<Hint> {
         if (state.isWon) return emptyList()
-        val plays = usefulPlays(state)
+        val plays = usefulPlays(state).filterNot { reverses(it, lastMove) }
         if (plays.isNotEmpty()) return plays.map(Hint::Play)
         return when {
             isStuck(state) -> listOf(Hint.Stuck)
@@ -30,23 +30,52 @@ object Hints {
         }
     }
 
+    /** A jogada [candidate] só desfaz [last] (devolve as mesmas cartas para onde estavam). */
+    private fun reverses(candidate: Move.Transfer, last: Move?): Boolean {
+        if (last !is Move.Transfer) return false
+        if (candidate.from != last.to || candidate.count != last.count) return false
+        return when (last.from) {
+            is PileRef.Foundation -> candidate.to is PileRef.Foundation
+            else -> candidate.to == last.from
+        }
+    }
+
     /**
-     * Travado: nenhuma jogada útil na mesa e nenhuma carta que chega ao topo do descarte,
-     * numa passada completa do monte, tem para onde ir.
+     * Travado: nenhuma jogada útil na mesa, e nenhuma carta que chega ao topo do descarte numa
+     * passada completa do monte tem para onde ir — nem no estado atual, nem depois de uma jogada
+     * que abre espaço (esvaziar uma coluna ou tirar uma carta da fundação).
      */
     fun isStuck(state: GameState): Boolean {
         if (state.isWon || usefulPlays(state).isNotEmpty()) return false
-        var s = state
+        if (passCanPlay(state)) return false
+        return spaceOpeningMoves(state).none { passCanPlay(Engine.apply(state, it)!!) }
+    }
+
+    /** Alguma carta que chega ao topo do descarte numa passada completa do monte pode ser jogada. */
+    private fun passCanPlay(start: GameState): Boolean {
+        var s = start
         val seen = mutableSetOf<Int>()
         while (seen.add(s.stock.size)) {
-            if (wasteTopPlayable(s)) return false
+            if (wasteTopPlayable(s)) return true
             s = when {
                 Rules.isLegal(s, Move.Draw) -> Engine.apply(s, Move.Draw)!!
                 Rules.isLegal(s, Move.Recycle) -> Engine.apply(s, Move.Recycle)!!
-                else -> return true
+                else -> return false
             }
         }
-        return true
+        return false
+    }
+
+    /** Jogadas legais que abrem espaço: coluna inteira para outra coluna, ou fundação para coluna. */
+    private fun spaceOpeningMoves(s: GameState): List<Move.Transfer> {
+        val emptying = s.tableau.indices.filter { s.tableau[it].isNotEmpty() }.flatMap { i ->
+            s.tableau.indices.filter { s.tableau[it].isNotEmpty() }
+                .map { Move.Transfer(PileRef.Tableau(i), PileRef.Tableau(it), s.tableau[i].size) }
+        }
+        val fromFoundation = s.foundations.indices.flatMap { f ->
+            s.tableau.indices.map { Move.Transfer(PileRef.Foundation(f), PileRef.Tableau(it)) }
+        }
+        return (emptying + fromFoundation).filter { Rules.isLegal(s, it) }
     }
 
     private fun wasteTopPlayable(s: GameState): Boolean =

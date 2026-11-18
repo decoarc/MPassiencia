@@ -6,6 +6,7 @@ import io.github.decarc.mpaciencia.core.random.Pcg32
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNull
+import kotlin.test.assertTrue
 
 class GameCodecTest {
     @Test
@@ -19,6 +20,17 @@ class GameCodecTest {
         val back = GameCodec.decode(GameCodec.encode(g))!!
         assertEquals(g.state, back.state)
         assertEquals(g.moves, back.moves)
+    }
+
+    @Test
+    fun `encoded save always carries its format version`() {
+        val json = GameCodec.encode(Game.new(1, DrawMode.ONE).play(io.github.decarc.mpaciencia.core.model.Move.Draw)!!)
+        assertTrue("\"version\":1" in json, json)
+    }
+
+    @Test
+    fun `save from a newer format version decodes to null`() {
+        assertNull(GameCodec.decode("""{"version":2,"gameNumber":1,"drawMode":"ONE","moves":[]}"""))
     }
 
     @Test

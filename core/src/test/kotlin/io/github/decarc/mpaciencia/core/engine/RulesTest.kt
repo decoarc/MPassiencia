@@ -115,6 +115,17 @@ class RulesTest {
         assertFalse(legal(s, Move.Transfer(Foundation(0), Foundation(1))))
     }
 
+    @Test
+    fun `nothing moves after the game is won`() {
+        val full = (0 until 3).flatMap { deck ->
+            io.github.decarc.mpaciencia.core.model.Suit.entries.map { suit -> (1..13).map { card(it, suit, deck) } }
+        }
+        val s = state(foundations = full)
+        assertTrue(s.isWon)
+        assertFalse(legal(s, Move.Transfer(Foundation(0), Tableau(0))))
+        assertTrue(Engine.apply(s, Move.Transfer(Foundation(0), Tableau(0))) == null)
+    }
+
     // --- jogadas impossíveis ---
     @Test
     fun `same pile, stock and waste targets are illegal`() {

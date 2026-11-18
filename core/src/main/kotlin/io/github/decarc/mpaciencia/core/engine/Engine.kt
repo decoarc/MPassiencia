@@ -14,7 +14,7 @@ object Scoring {
 
 object Engine {
     /** Aplica [move] e devolve o novo estado, ou `null` se a jogada for ilegal. */
-    fun apply(state: GameState, move: Move): GameState? = when (move) {
+    fun apply(state: GameState, move: Move): GameState? = if (state.isWon) null else when (move) {
         Move.Draw -> draw(state)
         Move.Recycle -> recycle(state)
         is Move.Transfer -> transfer(state, move)

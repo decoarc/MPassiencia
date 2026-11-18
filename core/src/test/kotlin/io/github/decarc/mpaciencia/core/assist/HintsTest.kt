@@ -116,6 +116,41 @@ class HintsTest {
         assertTrue(Hints.all(s).isEmpty())
     }
 
+    /** 11 colunas com uma carta que não joga em lugar nenhum, para não haver colunas vazias. */
+    private fun fillers() = List(11) { col(down(4, CLUBS), up(5, CLUBS)) }
+
+    @Test
+    fun `not stuck when a king in the stock can use a column that can be emptied`() {
+        val s = state(
+            stock = listOf(card(13, SPADES), dead1),
+            tableau = listOf(col(up(9, HEARTS)), col(up(10, CLUBS))) + fillers(),
+        )
+        assertFalse(Hints.isStuck(s))
+        assertTrue(Hints.all(s).none { it == Hint.Stuck })
+    }
+
+    @Test
+    fun `not stuck when a foundation card coming down would host a stock card`() {
+        val f = foundationWith(0, *(1..6).map { card(it, SPADES) }.toTypedArray())
+        val s = state(
+            foundations = f,
+            stock = listOf(card(5, HEARTS), dead1),
+            tableau = listOf(col(up(7, HEARTS))) + fillers() + listOf(col(down(4, CLUBS), up(5, CLUBS))),
+        )
+        assertFalse(Hints.isStuck(s))
+    }
+
+    @Test
+    fun `hint never just reverses the last move`() {
+        val f = foundationWith(0, card(1, SPADES), card(2, SPADES), card(3, SPADES), card(4, SPADES), card(5, SPADES))
+        val before = state(foundations = f, tableau = listOf(col(up(6, HEARTS)), col(down(9, CLUBS), up(4, HEARTS))))
+        val last = Move.Transfer(Foundation(0), Tableau(0))
+        val after = io.github.decarc.mpaciencia.core.engine.Engine.apply(before, last)!!
+        val hints = Hints.all(after, lastMove = last)
+        assertTrue(hints.none { it is Hint.Play && it.move.from == Tableau(0) && it.move.to is Foundation })
+        assertEquals(Hint.Play(Move.Transfer(Tableau(1), Tableau(0))), hints.first())
+    }
+
     @Test
     fun `king at the bottom of a column is never hinted to an empty column`() {
         val s = state(tableau = listOf(col(up(13, SPADES), up(12, HEARTS)), col()))

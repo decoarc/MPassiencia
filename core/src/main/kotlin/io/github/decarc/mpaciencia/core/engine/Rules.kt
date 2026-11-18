@@ -6,7 +6,8 @@ import io.github.decarc.mpaciencia.core.model.Move
 import io.github.decarc.mpaciencia.core.model.PileRef
 
 object Rules {
-    fun isLegal(state: GameState, move: Move): Boolean = when (move) {
+    /** Depois da vitória nada mais se move. */
+    fun isLegal(state: GameState, move: Move): Boolean = !state.isWon && when (move) {
         Move.Draw -> state.stock.isNotEmpty()
         Move.Recycle -> state.stock.isEmpty() && state.waste.isNotEmpty()
         is Move.Transfer -> movingCards(state, move) != null

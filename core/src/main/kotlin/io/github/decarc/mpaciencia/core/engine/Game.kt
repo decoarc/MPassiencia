@@ -8,11 +8,16 @@ import kotlinx.serialization.Serializable
 /** O que é salvo: só o número, o modo e as jogadas. O estado é reconstruído repetindo as jogadas. */
 @Serializable
 data class GameSnapshot(
-    val version: Int = 1,
+    val version: Int = CURRENT_VERSION,
     val gameNumber: Int,
     val drawMode: DrawMode,
     val moves: List<Move>,
-)
+) {
+    companion object {
+        /** Formato atual do salvamento. Um formato novo exige migração explícita em [Game.fromSnapshot]. */
+        const val CURRENT_VERSION = 1
+    }
+}
 
 /** Uma partida imutável. Desfazer repete todas as jogadas menos a última, a partir da distribuição. */
 class Game private constructor(
@@ -43,6 +48,7 @@ class Game private constructor(
 
         /** Reconstrói a partida; `null` se o número for inválido ou alguma jogada for ilegal. */
         fun fromSnapshot(snapshot: GameSnapshot): Game? {
+            if (snapshot.version != GameSnapshot.CURRENT_VERSION) return null
             if (snapshot.gameNumber !in Deal.MIN_GAME..Deal.MAX_GAME) return null
             return replay(snapshot.gameNumber, snapshot.drawMode, snapshot.moves)
         }

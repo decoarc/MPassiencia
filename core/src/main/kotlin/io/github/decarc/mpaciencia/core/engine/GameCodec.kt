@@ -4,7 +4,10 @@ import kotlinx.serialization.json.Json
 
 /** Salva e carrega uma partida em JSON. Nunca lança exceção ao carregar. */
 object GameCodec {
-    private val json = Json { ignoreUnknownKeys = true }
+    private val json = Json {
+        ignoreUnknownKeys = true
+        encodeDefaults = true
+    }
 
     fun encode(game: Game): String = json.encodeToString(GameSnapshot.serializer(), game.snapshot())
 
