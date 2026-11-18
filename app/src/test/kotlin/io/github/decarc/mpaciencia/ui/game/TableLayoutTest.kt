@@ -69,6 +69,14 @@ class TableLayoutTest {
     }
 
     @Test
+    fun `small phone fits 12 face-down and 8 face-up cards without scrolling`() {
+        // Só cabe porque o passo mínimo das viradas para cima é o da spec (~18 dp, uns 5 mm).
+        val g = TableLayout.compute(640f, 360f, columnState(12, 8))
+        assertFalse(g.scrolls)
+        assertTrue(g.steps[0].faceUp in 18f..20f, "faceUp=${g.steps[0].faceUp}")
+    }
+
+    @Test
     fun `medium column compresses face-down cards first`() {
         val g = TableLayout.compute(869f, 411f, columnState(12, 5))
         assertEquals(TableLayout.UP_COMFY * g.cardH, g.steps[0].faceUp)

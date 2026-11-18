@@ -8,6 +8,8 @@ import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -23,6 +25,8 @@ import androidx.navigation3.runtime.NavKey
 import androidx.navigation3.runtime.entryProvider
 import androidx.navigation3.runtime.rememberNavBackStack
 import androidx.navigation3.ui.NavDisplay
+import io.github.decarc.mpaciencia.audio.SoundPlayer
+import io.github.decarc.mpaciencia.audio.SoundPoolBackend
 import io.github.decarc.mpaciencia.data.DataStoreSettingsStore
 import io.github.decarc.mpaciencia.data.FileGameStore
 import io.github.decarc.mpaciencia.data.settingsDataStore
@@ -51,6 +55,10 @@ fun App() {
     )
     val ui by vm.state.collectAsStateWithLifecycle()
     val settings by vm.settings.collectAsStateWithLifecycle()
+    val player = remember { SoundPlayer(SoundPoolBackend(context)) { vm.settings.value.soundOn } }
+    DisposableEffect(player) { onDispose { player.release() } }
+    LaunchedEffect(vm, player) { vm.sounds.collect(player::play) }
+
     val backStack = rememberNavBackStack(MenuRoute)
     var showNewGame by remember { mutableStateOf(false) }
     var showInGameMenu by remember { mutableStateOf(false) }

@@ -90,7 +90,8 @@ object TableLayout {
         fun need(sd: Float, su: Float) = h + down * sd + upGaps * su
 
         var sd = DOWN_COMFY * h
-        var su = UP_COMFY * h
+        // Em cartas pequenas, 30% da altura seria menos que o mínimo legível: nunca fica abaixo dele.
+        var su = maxOf(UP_COMFY * h, UP_MIN)
         if (need(sd, su) <= available) return ColumnSteps(sd, su)
         if (down > 0) {
             sd = maxOf(DOWN_MIN, (available - h - upGaps * su) / down)
