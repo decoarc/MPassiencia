@@ -27,9 +27,12 @@ import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clipToBounds
+import androidx.compose.ui.graphics.drawscope.clipRect
+import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalDensity
@@ -150,7 +153,7 @@ fun TableView(
         // Espaços vazios (por baixo das cartas).
         g.foundations.forEachIndexed { i, r -> Slot(r, "A", Modifier.testTag("foundation-$i")) }
         g.columns.forEachIndexed { i, r ->
-            Slot(Rect(r.x, r.y - scrollY, r.w, r.h), "K", Modifier.testTag("column-$i"))
+            if (r.y - scrollY >= g.tableauTop - 0.5f) Slot(Rect(r.x, r.y - scrollY, r.w, r.h), "K", Modifier.testTag("column-$i"))
         }
         Slot(g.waste.copy(w = g.cardW), "", Modifier.testTag("waste"))
         if (state.stock.isEmpty()) Slot(g.stock, stringResource(R.string.recycle_label), Modifier)
@@ -172,9 +175,17 @@ fun TableView(
             )
         }
 
+        // Valores sempre atuais para os gestos (os blocos de gesto só reiniciam quando a carta muda de pilha).
+        val currentState by rememberUpdatedState(state)
+        val currentG by rememberUpdatedState(g)
+        val currentAll by rememberUpdatedState(all)
+        val currentOnDrop by rememberUpdatedState(onDrop)
+        val currentOnTap by rememberUpdatedState(onTapCard)
+
         all.forEach { sp ->
             key(sp.card) {
-                val target = Offset(sp.x, if (sp.inTableau) sp.y - scrollY else sp.y)
+                // Posição sem rolagem; a rolagem e o arraste só são lidos no layout/desenho (sem recompor a mesa).
+                val target = Offset(sp.x, sp.y)
                 val anim = remember { Animatable(target, Offset.VectorConverter) }
                 val release = releaseFrom[sp.card]
                 LaunchedEffect(target, release) {
@@ -196,11 +207,33 @@ fun TableView(
                     }
                 }
                 val dragging = sp.card in draggedCards
-                val pos = if (dragging) target + dragDelta else anim.value
+                val inTableau = sp.inTableau
+                fun shownY(): Float {
+                    val base = if (dragging) target.y + dragDelta.y else anim.value.y
+                    return if (inTableau) base - scrollY else base
+                }
+                // A fileira de cima fica acima das colunas; o grupo arrastado fica acima de tudo.
+                val z = when {
+                    dragging -> 10_000f + sp.z
+                    inTableau -> sp.z
+                    else -> 2_000f + sp.z
+                }
                 var m = Modifier
-                    .zIndex(if (dragging) 10_000f + sp.z else sp.z)
-                    .offset { IntOffset(((pos.x + shake.value) * density.density).roundToInt(), (pos.y * density.density).roundToInt()) }
+                    .zIndex(z)
+                    .offset {
+                        val x = (if (dragging) target.x + dragDelta.x else anim.value.x) + shake.value
+                        IntOffset((x * density.density).roundToInt(), (shownY() * density.density).roundToInt())
+                    }
                     .size(g.cardW.dp, g.cardH.dp)
+                    // Coluna rolada: a parte da carta acima da linha da mesa não é desenhada.
+                    .drawWithContent {
+                        val hidden = (g.tableauTop - shownY()) * density.density
+                        if (inTableau && !dragging && !anim.isRunning && hidden > 0f) {
+                            clipRect(top = hidden) { this@drawWithContent.drawContent() }
+                        } else {
+                            drawContent()
+                        }
+                    }
                     .testTag(sp.card.tag())
                 if (sp.card in sources) {
                     m = m.border(3.dp, HintOutline, RoundedCornerShape((g.cardW * 0.08f).dp))
@@ -208,7 +241,7 @@ fun TableView(
                 if (sp.grab > 0) {
                     m = m.pointerInput(sp.card, sp.pile, sp.grab) {
                         detectTapGestures {
-                            if (!onTapCard(sp.pile, sp.grab)) shakes[sp.card] = (shakes[sp.card] ?: 0) + 1
+                            if (!currentOnTap(sp.pile, sp.grab)) shakes[sp.card] = (shakes[sp.card] ?: 0) + 1
                         }
                     }.pointerInput(sp.card, sp.pile, sp.grab, "drag") {
                         detectDragGestures(
@@ -225,14 +258,15 @@ fun TableView(
                                 val from = dragFrom
                                 val count = dragCount
                                 val delta = dragDelta
-                                val group = all.filter { it.pile == from && it.grab in 1..count }
-                                group.forEach { releaseFrom[it.card] = Offset(it.x, if (it.inTableau) it.y - scrollY else it.y) + delta }
+                                val geo = currentG
+                                val group = currentAll.filter { it.pile == from && it.grab in 1..count }
+                                group.forEach { releaseFrom[it.card] = Offset(it.x, it.y) + delta }
                                 dragFrom = null
                                 dragDelta = Offset.Zero
                                 val top = group.maxByOrNull { it.grab } ?: return@detectDragGestures
-                                val cx = top.x + delta.x + g.cardW / 2
-                                val cy = (if (top.inTableau) top.y - scrollY else top.y) + delta.y + g.cardH / 2
-                                if (from != null) onDrop(from, count, TableLayout.hitTest(g, state, cx, cy, scrollY))
+                                val cx = top.x + delta.x + geo.cardW / 2
+                                val cy = (if (top.inTableau) top.y - scrollY else top.y) + delta.y + geo.cardH / 2
+                                if (from != null) currentOnDrop(from, count, TableLayout.hitTest(geo, currentState, cx, cy, scrollY))
                             },
                             onDragCancel = {
                                 dragFrom = null

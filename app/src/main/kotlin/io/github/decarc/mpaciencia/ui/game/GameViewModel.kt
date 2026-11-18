@@ -75,11 +75,17 @@ class GameViewModel(
     }
 
     /** Retoma a partida salva. Se ela já está na memória (voltou do menu), não relê o disco. */
-    fun continueSaved() {
+    val timerRunning: Boolean get() = runningSince != null
+
+    fun continueSaved(onMissing: () -> Unit = {}) {
         val current = _state.value.game
         if (current != null && !_state.value.won) return
         viewModelScope.launch {
-            val saved = store.load() ?: return@launch
+            val saved = store.load()
+            if (saved == null) {
+                onMissing()
+                return@launch
+            }
             startWith(saved.game, saved.elapsedMs)
         }
     }
@@ -152,6 +158,7 @@ class GameViewModel(
     }
 
     fun undo() {
+        if (_state.value.won) return
         val game = _state.value.game ?: return
         val previous = game.undo() ?: return
         onNewGameState(previous, sound = null)

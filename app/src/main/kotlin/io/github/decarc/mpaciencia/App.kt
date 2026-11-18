@@ -30,7 +30,10 @@ import io.github.decarc.mpaciencia.audio.SoundPoolBackend
 import io.github.decarc.mpaciencia.data.DataStoreSettingsStore
 import io.github.decarc.mpaciencia.data.FileGameStore
 import io.github.decarc.mpaciencia.data.settingsDataStore
-import io.github.decarc.mpaciencia.ui.game.GameScreen
+import io.github.decarc.mpaciencia.ui.game.GameEntry
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.compose.LocalLifecycleOwner
+import androidx.lifecycle.compose.currentStateAsState
 import io.github.decarc.mpaciencia.ui.game.GameViewModel
 import io.github.decarc.mpaciencia.ui.menu.MenuScreen
 import io.github.decarc.mpaciencia.ui.menu.NewGameDialog
@@ -46,6 +49,11 @@ import kotlinx.serialization.Serializable
 @Serializable data object RulesRoute : NavKey
 
 @Serializable data object SettingsRoute : NavKey
+
+/** Volta uma tela só se [route] ainda estiver no topo: um toque duplo não esvazia a pilha. */
+fun popIfTop(backStack: MutableList<NavKey>, route: NavKey) {
+    if (backStack.size > 1 && backStack.last() == route) backStack.removeAt(backStack.lastIndex)
+}
 
 @Composable
 fun App() {
@@ -71,8 +79,15 @@ fun App() {
     }
 
     fun toMenu() {
-        vm.pause()
         backStack.removeAll { it != MenuRoute }
+    }
+
+    // O relógio corre só com a mesa à vista, sem menu ou diálogo aberto, e com o app em primeiro plano.
+    val lifecycleState by LocalLifecycleOwner.current.lifecycle.currentStateAsState()
+    val started = lifecycleState.isAtLeast(Lifecycle.State.STARTED)
+    val tableVisible = backStack.lastOrNull() == GameRoute && !showInGameMenu && !showNewGame && ui.game != null
+    LaunchedEffect(tableVisible, started) {
+        if (tableVisible && started) vm.resume() else vm.pause()
     }
 
     NavDisplay(
@@ -94,26 +109,24 @@ fun App() {
                 )
             }
             entry<GameRoute> {
-                GameScreen(
+                GameEntry(
                     vm = vm,
+                    onMissing = { toMenu() },
                     onOpenMenu = { showInGameMenu = true },
                     onNewGame = { showNewGame = true },
                     onExitToMenu = { toMenu() },
                 )
             }
-            entry<RulesRoute> { RulesScreen(onBack = { backStack.removeAt(backStack.lastIndex) }) }
+            entry<RulesRoute> { RulesScreen(onBack = { popIfTop(backStack, RulesRoute) }) }
             entry<SettingsRoute> {
-                SettingsScreen(settings, onChange = vm::updateSettings, onBack = { backStack.removeAt(backStack.lastIndex) })
+                SettingsScreen(settings, onChange = vm::updateSettings, onBack = { popIfTop(backStack, SettingsRoute) })
             }
         },
     )
 
     if (showInGameMenu) {
         InGameMenu(
-            onContinue = {
-                showInGameMenu = false
-                vm.resume()
-            },
+            onContinue = { showInGameMenu = false },
             onNewGame = {
                 showInGameMenu = false
                 showNewGame = true
@@ -121,7 +134,6 @@ fun App() {
             onRestart = {
                 showInGameMenu = false
                 vm.restart()
-                vm.resume()
             },
             onSettings = {
                 showInGameMenu = false

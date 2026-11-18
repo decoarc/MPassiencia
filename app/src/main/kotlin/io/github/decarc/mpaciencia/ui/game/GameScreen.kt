@@ -32,8 +32,6 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.zIndex
-import androidx.lifecycle.Lifecycle
-import androidx.lifecycle.compose.LifecycleEventEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import io.github.decarc.mpaciencia.R
 import io.github.decarc.mpaciencia.ui.theme.Cream
@@ -54,6 +52,21 @@ fun formatElapsed(ms: Long): String {
     return if (h > 0) "%d:%02d:%02d".format(h, m, s) else "%02d:%02d".format(m, s)
 }
 
+/**
+ * Rota do jogo. Se o Android recriou o app sem a partida na memória (morte do processo em segundo
+ * plano), recarrega o salvamento; sem salvamento, volta ao menu. Nunca mostra tela vazia.
+ */
+@Composable
+fun GameEntry(vm: GameViewModel, onMissing: () -> Unit, onOpenMenu: () -> Unit, onNewGame: () -> Unit, onExitToMenu: () -> Unit) {
+    val ui by vm.state.collectAsStateWithLifecycle()
+    if (ui.game == null) {
+        Box(Modifier.fillMaxSize().feltBackground())
+        LaunchedEffect(vm) { vm.continueSaved(onMissing = onMissing) }
+    } else {
+        GameScreen(vm, onOpenMenu, onNewGame, onExitToMenu)
+    }
+}
+
 @Composable
 fun GameScreen(
     vm: GameViewModel,
@@ -65,8 +78,6 @@ fun GameScreen(
     val settings by vm.settings.collectAsStateWithLifecycle()
     val game = ui.game ?: return
 
-    LifecycleEventEffect(Lifecycle.Event.ON_START) { vm.resume() }
-    LifecycleEventEffect(Lifecycle.Event.ON_STOP) { vm.pause() }
 
     var clockText by remember { mutableLongStateOf(0L) }
     // O relógio espera fora da thread principal: ela fica livre (e ociosa) entre os tiques.
@@ -106,10 +117,7 @@ fun GameScreen(
             Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                 BarButton(stringResource(R.string.undo), "undo") { vm.undo() }
                 BarButton(stringResource(R.string.hint), "hint") { vm.hint() }
-                BarButton(stringResource(R.string.menu), "menu") {
-                    vm.pause()
-                    onOpenMenu()
-                }
+                BarButton(stringResource(R.string.menu), "menu") { onOpenMenu() }
             }
         }
 

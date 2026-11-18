@@ -64,6 +64,38 @@ class MenuFlowTest {
         rule.onNodeWithText("Mov. 1", substring = true).assertExists()
     }
 
+    private fun vm() = androidx.lifecycle.ViewModelProvider(rule.activity)[io.github.decarc.mpaciencia.ui.game.GameViewModel::class.java]
+
+    @Test
+    fun `clock runs after New Game from the in-game menu`() {
+        startNewGame()
+        rule.onNodeWithTag("stock").performClick()
+        rule.waitForIdle()
+        rule.onNodeWithTag("menu").performClick()
+        rule.waitForIdle()
+        rule.onNodeWithTag("ingame-new").performClick()
+        rule.waitForIdle()
+        rule.onNodeWithTag("dialog-play").performClick()
+        rule.waitForIdle()
+        rule.onNodeWithTag("discard-confirm").performClick()
+        rule.waitForIdle()
+        rule.onNodeWithTag("stock").performClick()
+        rule.waitForIdle()
+        kotlin.test.assertTrue(vm().timerRunning, "o relógio deveria estar correndo")
+    }
+
+    @Test
+    fun `system back from the game stops the clock`() {
+        startNewGame()
+        rule.onNodeWithTag("stock").performClick()
+        rule.waitForIdle()
+        kotlin.test.assertTrue(vm().timerRunning)
+        rule.runOnUiThread { rule.activity.onBackPressedDispatcher.onBackPressed() }
+        rule.waitForIdle()
+        rule.onNodeWithTag("menu-continue").assertExists()
+        kotlin.test.assertTrue(!vm().timerRunning, "o relógio deveria ter parado ao voltar ao menu")
+    }
+
     @Test
     fun `new game over a game in progress asks for confirmation`() {
         startNewGame()

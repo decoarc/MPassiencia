@@ -35,7 +35,13 @@ class FileGameStore(private val dir: File) : GameStore {
         }.getOrNull()
     }
 
+    /** Falha de disco (cheio, sem permissão) não pode fechar o app: a jogada continua na memória. */
     override suspend fun save(saved: SavedGame) = withContext(Dispatchers.IO) {
+        runCatching { write(saved) }
+        Unit
+    }
+
+    private fun write(saved: SavedGame) {
         dir.mkdirs()
         val text = json.encodeToString(SaveFile.serializer(), SaveFile(elapsedMs = saved.elapsedMs, game = GameCodec.encode(saved.game)))
         tmp.writeText(text)
@@ -43,7 +49,6 @@ class FileGameStore(private val dir: File) : GameStore {
             file.delete()
             tmp.renameTo(file)
         }
-        Unit
     }
 
     override suspend fun clear() = withContext(Dispatchers.IO) {

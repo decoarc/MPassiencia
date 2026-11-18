@@ -27,6 +27,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontFamily
@@ -57,7 +58,17 @@ fun WinOverlay(
     onNewGame: () -> Unit,
     onMenu: () -> Unit,
 ) {
-    Box(Modifier.fillMaxSize().background(Color.Black.copy(alpha = 0.35f)), contentAlignment = Alignment.Center) {
+    Box(
+        Modifier.fillMaxSize()
+            .background(Color.Black.copy(alpha = 0.35f))
+            // Engole os toques fora dos botões: nada chega à mesa de baixo.
+            .pointerInput(Unit) {
+                awaitPointerEventScope {
+                    while (true) awaitPointerEvent().changes.forEach { it.consume() }
+                }
+            },
+        contentAlignment = Alignment.Center,
+    ) {
         if (animationSpeed != AnimationSpeed.OFF) FallingCards()
         Column(
             Modifier.width(360.dp).background(Cream, RoundedCornerShape(18.dp)).padding(22.dp),
