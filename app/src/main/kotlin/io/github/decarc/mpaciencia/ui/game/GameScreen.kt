@@ -41,7 +41,9 @@ import io.github.decarc.mpaciencia.ui.theme.Gold
 import io.github.decarc.mpaciencia.ui.theme.Ink
 import io.github.decarc.mpaciencia.ui.theme.TitleCream
 import io.github.decarc.mpaciencia.ui.theme.feltBackground
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.withContext
 
 /** Tempo em mm:ss, ou h:mm:ss a partir de 1 hora. */
 fun formatElapsed(ms: Long): String {
@@ -66,10 +68,14 @@ fun GameScreen(
     LifecycleEventEffect(Lifecycle.Event.ON_STOP) { vm.pause() }
 
     var clockText by remember { mutableLongStateOf(0L) }
+    // O relógio espera fora da thread principal: ela fica livre (e ociosa) entre os tiques.
     LaunchedEffect(vm) {
-        while (true) {
-            clockText = vm.elapsedNow()
-            delay(1_000)
+        withContext(Dispatchers.Default) {
+            while (true) {
+                val now = vm.elapsedNow()
+                if (now / 1000 != clockText / 1000) clockText = now
+                delay(250)
+            }
         }
     }
 

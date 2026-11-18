@@ -14,4 +14,28 @@
     <string name="restart_game">Reiniciar este jogo</string>
     <string name="new_game">Novo Jogo</string>
     <string name="recycle_label">↻</string>
+
+    <!-- Menu inicial -->
+    <string name="continue_game">▶ Continuar</string>
+    <string name="how_to_play">Como Jogar</string>
+    <string name="options">Opções</string>
+    <string name="sound_on">Som ligado</string>
+    <string name="sound_off">Som desligado</string>
+
+    <!-- Novo Jogo -->
+    <string name="new_game_title">Novo Jogo</string>
+    <string name="game_number_label">Número do jogo (1 a 99999)</string>
+    <string name="game_number_value">Jogo nº %1$s ✎</string>
+    <string name="random_number">🎲</string>
+    <string name="random_number_desc">Sortear outro número</string>
+    <string name="mode_one">Vira 1 carta (médio)</string>
+    <string name="mode_three">Vira 3 cartas (difícil)</string>
+    <string name="cancel">Cancelar</string>
+    <string name="play">Jogar</string>
+    <string name="discard_title">Descartar a partida em andamento?</string>
+    <string name="discard">Descartar</string>
+    <string name="back">Voltar</string>
+
+    <!-- Menu da partida -->
+    <string name="exit_to_menu">Sair para o menu</string>
 </resources>

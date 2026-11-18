@@ -35,7 +35,7 @@ import kotlinx.coroutines.sync.withLock
 /** Estado da partida em andamento. Regras, pontos e desfazer vêm sempre do `core`. */
 class GameViewModel(
     private val store: GameStore,
-    settingsStore: SettingsStore,
+    private val settingsStore: SettingsStore,
     private val clock: () -> Long = SystemClock::elapsedRealtime,
     private val hints: (GameState, Move?) -> List<Hint> = Hints::all,
 ) : ViewModel() {
@@ -70,7 +70,14 @@ class GameViewModel(
         save()
     }
 
+    fun updateSettings(transform: (Settings) -> Settings) {
+        viewModelScope.launch { settingsStore.update(transform) }
+    }
+
+    /** Retoma a partida salva. Se ela já está na memória (voltou do menu), não relê o disco. */
     fun continueSaved() {
+        val current = _state.value.game
+        if (current != null && !_state.value.won) return
         viewModelScope.launch {
             val saved = store.load() ?: return@launch
             startWith(saved.game, saved.elapsedMs)
