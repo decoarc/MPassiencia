@@ -71,13 +71,16 @@ fun CardFace(card: Card, modifier: Modifier = Modifier) {
                 .border(1.dp, CardBorder, shape),
         ) {
             val corner = TextStyle(color = color, fontFamily = FontFamily.Serif, fontWeight = FontWeight.Bold, fontSize = w.asSp(0.26f), lineHeight = w.asSp(0.27f))
-            Column(Modifier.padding(start = w * 0.07f, top = w * 0.04f), horizontalAlignment = Alignment.CenterHorizontally) {
-                Text(rankLabel(card.rank), style = corner, softWrap = false)
-                Text(suitSymbol(card.suit), style = corner, softWrap = false)
-            }
+            // Valor e naipe na mesma linha: aparecem juntos até na tira mínima de uma coluna apertada.
+            Text(
+                rankLabel(card.rank) + suitSymbol(card.suit),
+                style = corner,
+                softWrap = false,
+                modifier = Modifier.padding(start = w * 0.06f, top = w * 0.03f),
+            )
             val face = card.rank >= 11
             Column(
-                Modifier.align(Alignment.Center).padding(top = w * 0.25f),
+                Modifier.align(Alignment.Center).padding(top = w * 0.30f),
                 horizontalAlignment = Alignment.CenterHorizontally,
             ) {
                 if (face) {

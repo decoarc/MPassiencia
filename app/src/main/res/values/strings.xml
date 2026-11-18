@@ -1,4 +1,17 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">Paciência Triplo</string>
+
+    <!-- Tela de jogo -->
+    <string name="game_header">#%1$d · Pontos %2$d · Mov. %3$d · %4$s</string>
+    <string name="undo">↶ Desfazer</string>
+    <string name="hint">💡 Dica</string>
+    <string name="menu">☰ Menu</string>
+    <string name="finish">Terminar</string>
+    <string name="stuck_title">Sem jogadas disponíveis</string>
+    <string name="stuck_text">Não há mais jogadas possíveis nesta partida.</string>
+    <string name="stuck_undo">Desfazer</string>
+    <string name="restart_game">Reiniciar este jogo</string>
+    <string name="new_game">Novo Jogo</string>
+    <string name="recycle_label">↻</string>
 </resources>
