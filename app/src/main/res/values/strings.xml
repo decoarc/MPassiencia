@@ -1,0 +1,73 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Paciência Triplo</string>
+
+    <!-- Tela de jogo -->
+    <string name="game_header">#%1$d · Pontos %2$d · Mov. %3$d · %4$s</string>
+    <string name="undo">↶ Desfazer</string>
+    <string name="hint">💡 Dica</string>
+    <string name="menu">☰ Menu</string>
+    <string name="finish">Terminar</string>
+    <string name="stuck_title">Sem jogadas disponíveis</string>
+    <string name="stuck_text">Não há mais jogadas possíveis nesta partida.</string>
+    <string name="stuck_undo">Desfazer</string>
+    <string name="restart_game">Reiniciar este jogo</string>
+    <string name="new_game">Novo Jogo</string>
+    <string name="recycle_label">↻</string>
+
+    <!-- Menu inicial -->
+    <string name="continue_game">▶ Continuar</string>
+    <string name="how_to_play">Como Jogar</string>
+    <string name="options">Opções</string>
+    <string name="sound_on">Som ligado</string>
+    <string name="sound_off">Som desligado</string>
+
+    <!-- Novo Jogo -->
+    <string name="new_game_title">Novo Jogo</string>
+    <string name="game_number_label">Número do jogo (1 a 99999)</string>
+    <string name="game_number_value">Jogo nº %1$s ✎</string>
+    <string name="random_number">🎲</string>
+    <string name="random_number_desc">Sortear outro número</string>
+    <string name="mode_one">Vira 1 carta (médio)</string>
+    <string name="mode_three">Vira 3 cartas (difícil)</string>
+    <string name="cancel">Cancelar</string>
+    <string name="play">Jogar</string>
+    <string name="discard_title">Descartar a partida em andamento?</string>
+    <string name="discard">Descartar</string>
+    <string name="back">Voltar</string>
+
+    <!-- Vitória -->
+    <string name="win_title">Você venceu!</string>
+    <string name="win_points">Pontos: %1$d</string>
+    <string name="win_moves">Movimentos: %1$d</string>
+    <string name="win_time">Tempo: %1$s</string>
+    <string name="win_game">Jogo #%1$d · %2$s</string>
+    <string name="mode_short_one">Vira 1</string>
+    <string name="mode_short_three">Vira 3</string>
+    <string name="win_menu">Menu</string>
+
+    <!-- Como Jogar -->
+    <string name="rules_title">Como Jogar</string>
+    <string name="rules_goal_title">Objetivo</string>
+    <string name="rules_goal">Levar as 156 cartas (3 baralhos) para as 12 fundações, do Ás ao Rei, cada fundação com um só naipe.</string>
+    <string name="rules_table_title">A mesa</string>
+    <string name="rules_table">As 13 colunas começam com 1 a 13 cartas; só a de cima fica virada. As outras 65 cartas ficam no monte, no canto de cima à esquerda.</string>
+    <string name="rules_columns_title">Colunas</string>
+    <string name="rules_columns">Monte as colunas em ordem decrescente, alternando vermelho e preto. Dá para mover uma carta ou um grupo já em sequência. Coluna vazia só aceita um Rei, ou um grupo que comece com Rei. Quando uma carta virada fica no topo, ela vira sozinha.</string>
+    <string name="rules_stock_title">Monte e descarte</string>
+    <string name="rules_stock">Toque no monte para virar 1 carta (ou 3, no modo difícil). Só a carta de cima do descarte pode ser jogada. Quando o monte acaba, toque nele de novo para recomeçar; não há limite de voltas.</string>
+    <string name="rules_play_title">Jogando</string>
+    <string name="rules_play">Toque numa carta para mandá-la ao melhor lugar, ou arraste-a até onde quiser. Use Desfazer quantas vezes precisar. A Dica mostra, com um contorno amarelo, uma jogada útil. Quando todas as cartas estiverem viradas e o monte vazio, aparece o botão Terminar, que leva tudo para as fundações.</string>
+
+    <!-- Opções -->
+    <string name="settings_title">Opções</string>
+    <string name="settings_default_mode">Modo dos novos jogos</string>
+    <string name="settings_sound">Som</string>
+    <string name="settings_speed">Velocidade das animações</string>
+    <string name="speed_normal">Normal</string>
+    <string name="speed_fast">Rápida</string>
+    <string name="speed_off">Desligada</string>
+
+    <!-- Menu da partida -->
+    <string name="exit_to_menu">Sair para o menu</string>
+</resources>
