@@ -24,7 +24,7 @@ object TapToMove {
     }
 
     /** Fundação que já tem o naipe primeiro; para um Ás, a primeira vazia da esquerda. */
-    private fun foundationTarget(state: GameState, from: PileRef): Move.Transfer? {
+    internal fun foundationTarget(state: GameState, from: PileRef): Move.Transfer? {
         val legal = state.foundations.indices
             .map { Move.Transfer(from, PileRef.Foundation(it), 1) }
             .filter { Rules.isLegal(state, it) }
